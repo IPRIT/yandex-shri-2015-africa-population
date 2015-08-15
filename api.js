@@ -132,7 +132,6 @@ function startDialog() {
  *
  * @param {string} inputValue
  * @param {function} callback
- *
  * @return void
  */
 function processInputData(inputValue, callback) {
@@ -174,7 +173,6 @@ function processInputData(inputValue, callback) {
  *
  * @param {string} query
  * @param {function} callback
- *
  * @return void
  */
 function getPopulation(query, callback) {
@@ -219,7 +217,6 @@ function getPopulation(query, callback) {
  * Строит особую структуру данных для дальнейшего удобного подсчета популяции.
  *
  * @param {object} responses — результаты API.
- *
  * @return {object} — объект с функцией для подсчета популяции.
  */
 function buildTree(responses) {
