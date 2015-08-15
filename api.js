@@ -202,7 +202,7 @@ function getPopulation(query, callback) {
                         console.log('Данные об этом месте отсутствуют.');
                         return callback(-1);
                     }
-                    return callback(0, tree.get(query));
+                    return callback(0, answer);
                 }
             };
         })(curUrl);
