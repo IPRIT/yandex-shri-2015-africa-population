@@ -7,7 +7,7 @@ function getData(url, callback) {
     var RESPONSES = {
         '/countries': [
             {name: 'Cameroon', continent: 'Africa'},
-            {name :'Fiji Islands', continent: 'Oceania'},
+            {name: 'Fiji Islands', continent: 'Oceania'},
             {name: 'Guatemala', continent: 'North America'},
             {name: 'Japan', continent: 'Asia'},
             {name: 'Yugoslavia', continent: 'Europe'},
@@ -31,7 +31,7 @@ function getData(url, callback) {
         ]
     };
 
-    setTimeout(function () {
+    setTimeout(function() {
         var result = RESPONSES[url];
         if (!result) {
             return callback('Unknown url');
@@ -55,37 +55,59 @@ for (var i = 0; i < apiUrls.length; ++i) {
     var curUrl = apiUrls[i];
     var callback = (function(url) {
         return function(error, result) {
+            if (error) throw error;
             responses[url] = result;
             var keys = Object.keys(responses);
 
             if (keys.length === apiUrls.length) {
-                var c = [], cc = [], p = 0;
-                for (var i = 0; i < responses['/countries'].length; i++) {
-                    if (responses['/countries'][i].continent === 'Africa') {
-                        c.push(responses['/countries'][i].name);
-                    }
-                }
-
-                for (i = 0; i < responses['/cities'].length; i++) {
-                    for (var j = 0; j < c.length; j++) {
-                        if (responses['/cities'][i].country === c[j]) {
-                            cc.push(responses['/cities'][i].name);
+                var curIndex = 0, stencil = ['Africa'],
+                    indexUrl = apiUrls[curIndex], curResponse = responses[indexUrl],
+                    internalKeys = ['continent', 'country', 'name'];
+                while (indexUrl) {
+                    var newStencil = [], curInternalKey = internalKeys[curIndex];
+                    for (var i = 0; i < stencil.length; ++i) {
+                        for (var j = 0; j < curResponse.length; ++j) {
+                            if (curResponse[j][curInternalKey] === stencil[i]) {
+                                newStencil.push(curResponse[j].count || curResponse[j].name);
+                            }
                         }
                     }
+                    stencil = newStencil;
+                    indexUrl = apiUrls[++curIndex];
+                    curResponse = responses[indexUrl];
                 }
-
-                for (i = 0; i < responses['/populations'].length; i++) {
-                    for (j = 0; j < cc.length; j++) {
-                        if (responses['/populations'][i].name === cc[j]) {
-                            p += responses['/populations'][i].count;
-                        }
-                    }
-                }
-
-                console.log('Total population in African cities: ' + p);
+                var africanPopulation = stencil.reduce(function(prevValue, curValue) {
+                    return prevValue + curValue;
+                });
+                console.log('Total population in African cities:', africanPopulation);
             }
         };
     })(curUrl);
 
     getData(curUrl, callback);
 }
+
+/*
+var c = [], cc = [], p = 0;
+for (var i = 0; i < responses['/countries'].length; i++) {
+    if (responses['/countries'][i].continent === 'Africa') {
+        c.push(responses['/countries'][i].name);
+    }
+}
+
+for (i = 0; i < responses['/cities'].length; i++) {
+    for (var j = 0; j < c.length; j++) {
+        if (responses['/cities'][i].country === c[j]) {
+            cc.push(responses['/cities'][i].name);
+        }
+    }
+}
+
+for (i = 0; i < responses['/populations'].length; i++) {
+    for (j = 0; j < cc.length; j++) {
+        if (responses['/populations'][i].name === cc[j]) {
+            p += responses['/populations'][i].count;
+        }
+    }
+}
+*/
