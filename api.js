@@ -1,5 +1,5 @@
 /**
- * Реализация API, не изменяйте ее
+ * Р РµР°Р»РёР·Р°С†РёСЏ API, РЅРµ РёР·РјРµРЅСЏР№С‚Рµ РµРµ
  * @param {string} url
  * @param {function} callback
  */
@@ -42,7 +42,7 @@ function getData(url, callback) {
 }
 
 /**
- * Ваши изменения ниже
+ * Р’Р°С€Рё РёР·РјРµРЅРµРЅРёСЏ РЅРёР¶Рµ
  */
 var apiUrls = [
     '/countries',

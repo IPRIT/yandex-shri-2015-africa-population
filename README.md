@@ -1,6 +1,6 @@
-#Численность популяции в Африке
+#Р§РёСЃР»РµРЅРЅРѕСЃС‚СЊ РїРѕРїСѓР»СЏС†РёРё РІ РђС„СЂРёРєРµ
 --------
 
-###Яндекс ШРИ
+###РЇРЅРґРµРєСЃ РЁР Р
 
 Demo: [iprit.github.io/yandex-shri-2015-africa-population](https://iprit.github.io/yandex-shri-2015-africa-population/)
