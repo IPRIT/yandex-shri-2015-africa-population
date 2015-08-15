@@ -41,6 +41,50 @@ function getData(url, callback) {
     }, Math.round(Math.random() * 1000));
 }
 
+
+/**
+ *
+ * # Описание проблемы:
+ *
+ * В предоставленном листинге переменная `request` в одной области видимости замыкается
+ * тремя функциями `callback`, однако значение переменной `request` меняется на каждой
+ * итерации, и, вследствие ассинхронности функции `getData`, обратный вызов функции
+ * `callback` будет происходить с замкнутой переменной `request`, которая имеет значение
+ * последнего элемента массива `requests` (в текущей версии `apiUrls` — прим.).
+ * Код выполняется неуспешно, вследствие того, что количество ключей объекта `responses`
+ * всегда меньше трех.
+ *
+ *
+ * # Решение проблемы:
+ *
+ * Достаточно замкнуть каждую переменную `request` на соответствующую функцию `callback`
+ * с помощью замыкающей анонимной функции.
+ * ```js
+ * var a = 1;
+ * var callback = (function(a){ ... })(a);
+ * ```
+ *
+ *
+ * # Изменения в решении:
+ *
+ * В приведенном ниже решении итерирующие переменные имеют локальные значения для устранения
+ * дальнейших пересечений и проблем.
+ * Изменен алгоритм подсчета численности населения для Африки.
+ *
+ *
+ * # Аннотация:
+ *
+ * Диалог с пользователем ведется с помощью `prompt`.
+ * ```
+ * /population [city|country|continent] — показывает численность населения для города, страны или континента.
+ * /get cities|countries|continents — показывает список городов, стран или континентов соответственно.
+ * /exit — завершает текущий диалог.
+ * ```
+ *
+ * Для возобновления диалога необходимо отправить в консоль `startDialog()`.
+ */
+
+
 /**
  * Ваши изменения ниже
  */
@@ -58,7 +102,7 @@ function computeAfricanPopulation() {
     var responses = {};
 
     for (var i = 0; i < apiUrls.length; ++i) {
-        var curUrl = apiUrls[i];
+        var request = apiUrls[i];
         var callback = (function(url) {
             return function(error, result) {
                 if (error) throw error;
@@ -90,9 +134,9 @@ function computeAfricanPopulation() {
                     console.log('Total population in African cities:', africanPopulation);
                 }
             };
-        })(curUrl);
+        })(request);
 
-        getData(curUrl, callback);
+        getData(request, callback);
     }
 }
 
@@ -105,13 +149,14 @@ setTimeout(startDialog, 1500);
  * Начинает диалог с пользователем.
  */
 function startDialog() {
-    var startMessage = 'Введите страну или город:\n\nДоступные команды:\n' +
-            '/population [city|country|continent] — показывает численность населения для города, страны или континента.\n' +
+    var startMessage = 'Введите континент, страну или город:\n\nДоступные команды:\n' +
+            '/population [city|country|continent] — показывает численность населения для города, страны или континента.\n\n' +
+            '/get cities|countries|continents — показывает список городов, стран или континентов соответственно.\n\n' +
             '/exit — завершает текущий диалог.',
         output = console.log.bind(console, 'Численность населения равна:'),
         promptValue;
 
-    promptValue = prompt(startMessage);
+    promptValue = prompt(startMessage, '/');
     processInputData(promptValue, callback);
 
     function callback(resultCode, answer) {
@@ -120,7 +165,7 @@ function startDialog() {
             return;
         }
         output(answer);
-        promptValue = prompt(startMessage, '/population ');
+        promptValue = prompt(startMessage, '/');
         processInputData(promptValue, callback);
     }
 }
@@ -137,12 +182,13 @@ function startDialog() {
 function processInputData(inputValue, callback) {
     inputValue = inputValue && inputValue.trim() || '/exit';
 
-    var dividedData = inputValue.split(/\s/, 2),
+    var dividedData = inputValue.split(/\s/),
         command = dividedData.shift();
 
     var execCommands = {
-        '/exit': closeDialog,
-        '/population': computePopulation
+        '/population': computePopulation,
+        '/get': getPlaces,
+        '/exit': closeDialog
     };
 
     if (!(command in execCommands)) {
@@ -152,16 +198,24 @@ function processInputData(inputValue, callback) {
 
     execCommands[command]();
 
-    function closeDialog() {
-        callback(-2);
-    }
-
     function computePopulation() {
         if (!dividedData.length) {
             console.log('Пропущен второй параметр (city|country|continent).');
             return callback(-1);
         }
-        getPopulation(dividedData.shift(), callback);
+        getPopulation(dividedData.join(' '), callback);
+    }
+
+    function getPlaces() {
+        if (!dividedData.length) {
+            console.log('Пропущен второй параметр (cities|countries|continents).');
+            return callback(-1);
+        }
+        printPlaces(dividedData.shift(), callback);
+    }
+
+    function closeDialog() {
+        callback(-2);
     }
 }
 
@@ -233,7 +287,7 @@ function buildTree(responses) {
 
         for (var j = 0; j < curResponse.length; ++j) {
             curResponseRow = curResponse[j];
-            var curMainProperty = curResponseRow[ internalProperties[i][1]],
+            var curMainProperty = curResponseRow[ internalProperties[i][1] ],
                 curSecondProperty = curResponseRow[ internalProperties[i][0] ];
             if (!Array.isArray(linkTree[curMainProperty]) && typeof curSecondProperty !== 'number') {
                 linkTree[curMainProperty] = [];
@@ -264,4 +318,54 @@ function buildTree(responses) {
 
         return populationSum;
     }
+}
+
+
+/**
+ * @description
+ * Получает с помощью API список всех континентов, стран или городов
+ * и печатает их в консоль.
+ *
+ * @param {string} query
+ * @param {function} callback
+ * @return void
+ */
+function printPlaces(query, callback) {
+    if (typeof query !== 'string') {
+        console.log('Второй параметр - пустой.');
+        return callback(-1);
+    }
+
+    var availableQueries = {
+            'continents': ['/countries', 'continent'],
+            'countries': ['/countries', 'name'],
+            'cities': ['/cities', 'name']
+        },
+        curQuery = availableQueries[query];
+
+    if (!curQuery) {
+        console.log('Неверный запрос.');
+        return callback(-1);
+    }
+
+    var requestCallback = function(error, result) {
+        if (error || !Array.isArray(result)) {
+            console.log('Произошла неизвестная ошибка.');
+            return callback(-1);
+        }
+
+        console.log('\n' + query + ':');
+        //note: нужно выводить только уникальные значения.
+        var placesSet = {}, curPlace;
+        for (var i = 0; i < result.length; ++i) {
+            curPlace = result[i][ curQuery[1] ];
+            if (curPlace in placesSet) {
+                continue;
+            }
+            console.log(placesSet[curPlace] = curPlace);
+        }
+        callback(-1);
+    };
+
+    getData(curQuery[0], requestCallback);
 }
