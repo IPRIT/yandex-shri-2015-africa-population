@@ -108,7 +108,7 @@ function startDialog() {
     var startMessage = 'Введите страну или город:\n\nДоступные команды:\n' +
             '/population [city|country|continent] — показывает численность населения для города, страны или континента.\n' +
             '/exit — завершает текущий диалог.',
-        output = console.log.bind(console, 'Численность населения для города/страны/континента равна:'),
+        output = console.log.bind(console, 'Численность населения равна:'),
         promptValue;
 
     promptValue = prompt(startMessage);
