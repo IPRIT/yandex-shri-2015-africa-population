@@ -106,12 +106,12 @@ setTimeout(startDialog, 1500);
  */
 function startDialog() {
     var startMessage = 'Введите страну или город:\n\nДоступные команды:\n' +
-            '/population [city|country|continent] — показывает численность населения для города, страны или континента\n' +
-            '/exit — завершает текущий диалог',
+            '/population [city|country|continent] — показывает численность населения для города, страны или континента.\n' +
+            '/exit — завершает текущий диалог.',
         output = console.log.bind(console, 'Численность населения для города/страны/континента равна:'),
         promptValue;
 
-    promptValue = prompt(startMessage, '/population Africa');
+    promptValue = prompt(startMessage);
     processInputData(promptValue, callback);
 
     function callback(resultCode, answer) {
@@ -120,12 +120,21 @@ function startDialog() {
             return;
         }
         output(answer);
-        promptValue = prompt(startMessage);
+        promptValue = prompt(startMessage, '/population ');
         processInputData(promptValue, callback);
     }
 }
 
 
+/**
+ * @description
+ * Обработчик входящих сообщений.
+ *
+ * @param {string} inputValue
+ * @param {function} callback
+ *
+ * @return void
+ */
 function processInputData(inputValue, callback) {
     inputValue = inputValue && inputValue.trim() || '/exit';
 
@@ -157,6 +166,17 @@ function processInputData(inputValue, callback) {
     }
 }
 
+
+/**
+ * @description
+ * Ассинхронно возвращает численность популяции для определенного места.
+ * Вызывает функции API.
+ *
+ * @param {string} query
+ * @param {function} callback
+ *
+ * @return void
+ */
 function getPopulation(query, callback) {
     if (typeof query !== 'string') {
         console.log('Второй параметр - пустой.');
@@ -179,17 +199,12 @@ function getPopulation(query, callback) {
 
                 if (keys.length === apiUrls.length) {
                     var tree = buildTree(responses),
-                        treeKeys = Object.keys(tree),
-                        curSubTree;
-                    for (var i = 0; i < treeKeys.length; ++i) {
-                        curSubTree = tree[treeKeys[i]];
-                        if (typeof curSubTree[query] !== 'undefined') {
-                            return callback(0, curSubTree[query]);
-                        }
+                        answer = tree.get(query);
+                    if (!answer) {
+                        console.log('Данные об этом месте отсутствуют.');
+                        return callback(-1);
                     }
-
-                    console.log('Ничего не найдено.');
-                    callback(-1);
+                    return callback(0, tree.get(query));
                 }
             };
         })(curUrl);
@@ -198,24 +213,57 @@ function getPopulation(query, callback) {
     }
 }
 
+/**
+ * @description
+ * Строит особую структуру данных для дальнейшего удобного подсчета популяции.
+ *
+ * @param {object} responses — результаты API.
+ *
+ * @return {object} — объект с функцией для подсчета популяции.
+ */
 function buildTree(responses) {
-    var tree = {
-        continents: {},
-        countries: {},
-        cities: {}
-    }, internalProperties = [
+    var internalProperties = [
         ['name', 'continent'],
         ['name', 'country'],
         ['count', 'name']
-    ];
+    ], linkTree = {};
 
-    function buildSubTree(curSubTree, path) {
-        var pathResponse = responses[path],
-            propertyOffsetIndex = apiUrls.indexOf(path),
-            startInternalProperties = Object.keys(pathResponse[0])[propertyOffsetIndex];
-        for (var i = 0; i < pathResponse.length; ++i) {
-            var curRow = pathResponse[i],
-                curProperty = curRow[startInternalProperties]
+    for (var i = 0; i < apiUrls.length; ++i) {
+        var curUrl = apiUrls[i],
+            curResponse = responses[curUrl],
+            curResponseRow;
+
+        for (var j = 0; j < curResponse.length; ++j) {
+            curResponseRow = curResponse[j];
+            var curMainProperty = curResponseRow[ internalProperties[i][1]],
+                curSecondProperty = curResponseRow[ internalProperties[i][0] ];
+            if (!Array.isArray(linkTree[curMainProperty]) && typeof curSecondProperty !== 'number') {
+                linkTree[curMainProperty] = [];
+            }
+            if (typeof curSecondProperty !== 'number') {
+                linkTree[curMainProperty].push(curSecondProperty);
+            } else {
+                linkTree[curMainProperty] = curSecondProperty;
+            }
         }
+    }
+
+    return {
+        get: getPopulationByLocation
+    };
+
+    function getPopulationByLocation(location) {
+        if (typeof linkTree[location] === 'number') {
+            return linkTree[location];
+        }
+        if (!linkTree[location]) {
+            return 0;
+        }
+        var populationSum = 0;
+        for (var i = 0; i < linkTree[location].length; ++i) {
+            populationSum += getPopulationByLocation(linkTree[location][i]);
+        }
+
+        return populationSum;
     }
 }
