@@ -213,6 +213,7 @@ function getPopulation(query, callback) {
     }
 }
 
+
 /**
  * @description
  * Строит особую структуру данных для дальнейшего удобного подсчета популяции.
