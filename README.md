@@ -23,7 +23,11 @@ Demo: [codepen.io/IPRIT/pen/gpJYMX](http://codepen.io/IPRIT/pen/gpJYMX?editors=0
 с помощью замыкающей анонимной функции.
 ```js
 var a = 1;
-var callback = (function(a){ ... })(a);
+var callback = (function (a) { 
+    return function (error, result) {
+        ...
+    }
+})(a);
 ```
  
  
